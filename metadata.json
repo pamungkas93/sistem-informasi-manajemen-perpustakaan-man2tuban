@@ -1,0 +1,8 @@
+{
+  "name": "Sistem Informasi Manajemen Perpustakaan Sekolah",
+  "description": "Sistem Informasi Manajemen Perpustakaan Sekolah lengkap dengan manajemen buku, peminjaman, pengembalian, laporan semester, dan ekspor Excel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
