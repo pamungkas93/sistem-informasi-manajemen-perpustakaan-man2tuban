@@ -20,6 +20,7 @@ import { PhpSourceView } from './components/PhpSourceView';
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(initialUsers[0]); // Default logged in as admin
   const [currentView, setCurrentView] = useState<string>('dashboard');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const [bukuList, setBukuList] = useState<Buku[]>(initialBuku);
   const [kategoriList, setKategoriList] = useState<Kategori[]>(initialKategori);
@@ -108,16 +109,34 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col font-sans text-slate-900 dark:text-slate-100">
-      <Navbar currentUser={currentUser} onLogout={() => setCurrentUser(null)} />
+      <Navbar 
+        currentUser={currentUser} 
+        onLogout={() => setCurrentUser(null)} 
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+      />
 
-      <div className="flex flex-1">
-        <Sidebar
-          currentView={currentView}
-          onSelectView={view => setCurrentView(view)}
-          cartCount={cart.reduce((acc, c) => acc + c.jumlah, 0)}
-        />
+      <div className="flex flex-1 relative">
+        {/* Mobile Sidebar Overlay */}
+        {isMobileSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-xs"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
 
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto max-w-[1600px] mx-auto">
+        {/* Sidebar Container */}
+        <div className={`fixed lg:relative inset-y-0 left-0 z-45 transform ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} transition-transform duration-300`}>
+          <Sidebar
+            currentView={currentView}
+            onSelectView={view => {
+              setCurrentView(view);
+              setIsMobileSidebarOpen(false);
+            }}
+            cartCount={cart.reduce((acc, c) => acc + c.jumlah, 0)}
+          />
+        </div>
+
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-[1600px] mx-auto w-full">
           {currentView === 'dashboard' && (
             <DashboardView
               bukuList={bukuList}

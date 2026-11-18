@@ -77,6 +77,17 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
     setIsModalOpen(true);
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingBuku) {
@@ -464,13 +475,31 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">URL Cover Buku (Opsional)</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Cover Buku (Upload Gambar dari Komputer / URL)
+                </label>
+                <div className="flex items-center gap-3">
+                  {coverUrl && (
+                    <img
+                      src={coverUrl}
+                      alt="Preview"
+                      className="w-12 h-16 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                  />
+                </div>
                 <input
-                  type="url"
+                  type="text"
                   value={coverUrl}
                   onChange={e => setCoverUrl(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs"
-                  placeholder="https://images.unsplash.com/..."
+                  className="w-full mt-2 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs"
+                  placeholder="Atau masukkan URL gambar (https://...)"
                 />
               </div>
 
