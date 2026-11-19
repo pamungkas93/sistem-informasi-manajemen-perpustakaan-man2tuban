@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Buku, Kategori, Peminjaman, CartItem } from './types';
 import { initialUsers, initialBuku, initialKategori, initialPeminjaman } from './data/initialData';
+import { apiService } from './services/api';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { LoginView } from './components/LoginView';
@@ -26,6 +27,21 @@ export default function App() {
   const [kategoriList, setKategoriList] = useState<Kategori[]>(initialKategori);
   const [peminjamanList, setPeminjamanList] = useState<Peminjaman[]>(initialPeminjaman);
   const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Fetch from PHP MySQLi API on mount (with local state fallback)
+  useEffect(() => {
+    async function loadDataFromApi() {
+      const apiBuku = await apiService.getBuku();
+      if (apiBuku && apiBuku.length > 0) {
+        setBukuList(apiBuku);
+      }
+      const apiLoans = await apiService.getPeminjaman();
+      if (apiLoans && apiLoans.length > 0) {
+        setPeminjamanList(apiLoans);
+      }
+    }
+    loadDataFromApi();
+  }, []);
 
   // Cart Handlers
   const handleAddToCart = (item: CartItem) => {
@@ -61,16 +77,36 @@ export default function App() {
   };
 
   // Buku Handlers
-  const handleAddBuku = (newBuku: Omit<Buku, 'id'>) => {
+  const handleAddBuku = async (newBuku: Omit<Buku, 'id'>) => {
+    try {
+      const res = await apiService.addBuku(newBuku);
+      if (res && res.status === 'success') {
+        const id = res.id || Date.now();
+        setBukuList(prev => [...prev, { ...newBuku, id, stok_tersedia: newBuku.stok }]);
+        return;
+      }
+    } catch (e) {
+      console.warn('API addBuku tidak aktif, menyimpan ke local state saja.');
+    }
     const id = Date.now();
-    setBukuList(prev => [...prev, { ...newBuku, id }]);
+    setBukuList(prev => [...prev, { ...newBuku, id, stok_tersedia: newBuku.stok }]);
   };
 
-  const handleUpdateBuku = (updated: Buku) => {
+  const handleUpdateBuku = async (updated: Buku) => {
+    try {
+      await apiService.updateBuku(updated);
+    } catch (e) {
+      console.warn('API updateBuku tidak aktif, memperbarui local state saja.');
+    }
     setBukuList(prev => prev.map(b => b.id === updated.id ? updated : b));
   };
 
-  const handleDeleteBuku = (id: number) => {
+  const handleDeleteBuku = async (id: number) => {
+    try {
+      await apiService.deleteBuku(id);
+    } catch (e) {
+      console.warn('API deleteBuku tidak aktif, menghapus dari local state saja.');
+    }
     setBukuList(prev => prev.filter(b => b.id !== id));
   };
 
@@ -89,16 +125,33 @@ export default function App() {
   };
 
   // Peminjaman / Checkout Handlers
-  const handleCheckout = (newPeminjaman: Omit<Peminjaman, 'id'>, updatedBooks: Buku[]) => {
+  const handleCheckout = async (newPeminjaman: Omit<Peminjaman, 'id'>, updatedBooks: Buku[]) => {
+    try {
+      const res = await apiService.checkout(newPeminjaman);
+      if (res && res.status === 'success') {
+        const id = res.id || Date.now();
+        const created: Peminjaman = { ...newPeminjaman, id };
+        created.details = created.details.map(d => ({ ...d, peminjaman_id: id }));
+        setPeminjamanList(prev => [created, ...prev]);
+        setBukuList(updatedBooks);
+        return;
+      }
+    } catch (e) {
+      console.warn('API checkout tidak aktif, memproses local state.');
+    }
     const id = Date.now();
     const created: Peminjaman = { ...newPeminjaman, id };
-    // Assign peminjaman_id to details
     created.details = created.details.map(d => ({ ...d, peminjaman_id: id }));
     setPeminjamanList(prev => [created, ...prev]);
     setBukuList(updatedBooks);
   };
 
-  const handleUpdatePeminjaman = (updatedLoan: Peminjaman, updatedBooks: Buku[]) => {
+  const handleUpdatePeminjaman = async (updatedLoan: Peminjaman, updatedBooks: Buku[]) => {
+    try {
+      await apiService.updatePeminjaman(updatedLoan);
+    } catch (e) {
+      console.warn('API updatePeminjaman tidak aktif, memperbarui local state.');
+    }
     setPeminjamanList(prev => prev.map(l => l.id === updatedLoan.id ? updatedLoan : l));
     setBukuList(updatedBooks);
   };
